@@ -183,37 +183,6 @@
   </div>
   <% } %>
 
-  <h2 style="font-size:16px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-    Quick Access
-    <% if (user && user.role === 'student') { %>
-      <div style="display:flex;gap:8px;">
-        <a href="/student/export?type=download" class="btn btn-sm btn-outline" style="font-size:11px;">⬇️ Download (Excel)</a>
-
-      </div>
-    <% } %>
-  </h2>
-  <div class="quick-links">
-    <a href="/admissions" class="quick-card">
-      <div class="quick-icon" style="background:#ede9fe;">📋</div>
-      <div><h3>Admissions</h3><p>Manage applications & approvals</p></div>
-      <span class="quick-plus">+</span>
-    </a>
-    <a href="/exams" class="quick-card">
-      <div class="quick-icon" style="background:#dbeafe;">📝</div>
-      <div><h3>Exam Results</h3><p>Enter and view grades</p></div>
-      <span class="quick-plus">+</span>
-    </a>
-    <a href="/fees" class="quick-card">
-      <div class="quick-icon" style="background:#dcfce7;">💰</div>
-      <div><h3>Fee Management</h3><p>Track payments & receipts</p></div>
-      <span class="quick-plus">+</span>
-    </a>
-    <a href="/hostel" class="quick-card">
-      <div class="quick-icon" style="background:#fef9c3;">🏠</div>
-      <div><h3>Hostel</h3><p>Room allocation & occupancy</p></div>
-      <span class="quick-plus">+</span>
-    </a>
-  </div>
 </div>
 
 <!-- Edit Modal Overlay for Dashboard -->
