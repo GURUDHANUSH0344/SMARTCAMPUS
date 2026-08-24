@@ -102,28 +102,36 @@ app.use((err, req, res, next) => {
 
 // DB sync + start server
 const PORT = process.env.PORT || 3000;
-db.sync()
 
+db.sync()
   .then(async () => {
     console.log("✅ Database connected and synced");
     
     // Seed initial subjects
-    const { Subject } = require("./models/index");
-    const count = await Subject.count();
-    if (count === 0) {
-      await Subject.bulkCreate([
-        { name: "Mathematics I" }, { name: "Physics" }, { name: "Chemistry" },
-        { name: "Programming in C" }, { name: "Data Structures" }, { name: "Algorithms" },
-        { name: "Database Management" }, { name: "Operating Systems" }, { name: "Computer Networks" },
-        { name: "Software Engineering" }, { name: "Machine Learning" }, { name: "Artificial Intelligence" }
-      ]);
-      console.log("🌱 Subjects seeded");
+    try {
+      const { Subject } = require("./models/index");
+      const count = await Subject.count();
+      if (count === 0) {
+        await Subject.bulkCreate([
+          { name: "Mathematics I" }, { name: "Physics" }, { name: "Chemistry" },
+          { name: "Programming in C" }, { name: "Data Structures" }, { name: "Algorithms" },
+          { name: "Database Management" }, { name: "Operating Systems" }, { name: "Computer Networks" },
+          { name: "Software Engineering" }, { name: "Machine Learning" }, { name: "Artificial Intelligence" }
+        ]);
+        console.log("🌱 Subjects seeded");
+      }
+    } catch (seedErr) {
+      console.warn("⚠️ Subject seeding skipped or already exists:", seedErr.message);
     }
 
-    startFeeReminderCron();
-    app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+    if (!process.env.VERCEL) {
+      startFeeReminderCron();
+      app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+    }
   })
   .catch((err) => {
-    console.error("❌ Database connection failed:", err.message);
-    process.exit(1);
+    console.error("❌ Database connection error:", err.message);
   });
+
+module.exports = app;
+
