@@ -1,4 +1,6 @@
 const { Sequelize } = require("sequelize");
+const mysql2 = require("mysql2");
+const pg = require("pg");
 
 let sequelize;
 
@@ -7,6 +9,7 @@ if (process.env.DATABASE_URL) {
   const isPostgres = process.env.DATABASE_URL.startsWith("postgres");
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: isPostgres ? "postgres" : "mysql",
+    dialectModule: isPostgres ? pg : mysql2,
     logging: false,
     dialectOptions: {
       ssl: {
@@ -24,7 +27,8 @@ if (process.env.DATABASE_URL) {
 } else {
   // Option 2: Individual variables
   const dialect = process.env.DB_DIALECT || (process.env.DB_HOST && process.env.DB_HOST.includes("supabase") ? "postgres" : "mysql");
-  const useSsl = process.env.DB_SSL === "true" || dialect === "postgres";
+  const isPostgres = dialect === "postgres";
+  const useSsl = process.env.DB_SSL === "true" || isPostgres;
 
   sequelize = new Sequelize(
     process.env.DB_NAME || "erp_db",
@@ -32,8 +36,9 @@ if (process.env.DATABASE_URL) {
     process.env.DB_PASS || "password",
     {
       host: process.env.DB_HOST || "localhost",
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : (dialect === "postgres" ? 5432 : 3306),
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : (isPostgres ? 5432 : 3306),
       dialect: dialect,
+      dialectModule: isPostgres ? pg : mysql2,
       logging: false,
       pool: {
         max: 5,
@@ -54,4 +59,5 @@ if (process.env.DATABASE_URL) {
 }
 
 module.exports = sequelize;
+
 
