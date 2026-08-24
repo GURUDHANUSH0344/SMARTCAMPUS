@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admissions – SmartCampus ERP</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<%- include('partials/navbar') %>
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Admissions</h1>
+    <% if (user && user.role === 'admin') { %>
+      <div style="display: flex; gap: 12px;">
+        <form id="bulk-upload-form" action="/admissions/bulk-upload" method="POST" enctype="multipart/form-data" style="display: none;">
+          <input type="file" name="bulkFile" id="bulk-file-input" onchange="this.form.submit()" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+        </form>
+        <button class="btn btn-ghost" onclick="document.getElementById('bulk-file-input').click()">📁 Bulk Upload</button>
+        <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">+ New Application</button>
+      </div>
+    <% } %>
+
+  </div>
+
+  <div class="card">
+    <div class="card-header">All Applications (<%= admissions.length %>)</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Name</th><th>Email</th><th>Course</th><th>Document</th><th>Status</th>
+            <% if (user && user.role === 'admin') { %><th>Actions</th><% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (admissions.length === 0) { %>
+            <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No applications yet.</td></tr>
+          <% } %>
+          <% admissions.forEach((a, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td><strong><%= a.name %></strong></td>
+            <td><%= a.email %></td>
+            <td><%= a.course || '—' %></td>
+            <td>
+              <% if (a.document) { %>
+                <a href="/uploads/<%= a.document %>" target="_blank" class="btn btn-sm btn-ghost">View</a>
+              <% } else { %>—<% } %>
+            </td>
+            <td>
+              <span class="badge badge-<%= a.status.toLowerCase() %>"><%= a.status %></span>
+            </td>
+            <% if (user && user.role === 'admin') { %>
+            <td>
+              <div class="actions">
+                <% if (a.status === 'Pending') { %>
+                  <form method="POST" action="/admissions/approve/<%= a.id %>">
+                    <button class="btn btn-sm btn-success">Approve</button>
+                  </form>
+                  <form method="POST" action="/admissions/reject/<%= a.id %>">
+                    <button class="btn btn-sm btn-danger">Reject</button>
+                  </form>
+                <% } else { %>
+                  <span style="color:var(--muted);font-size:12px;">Processed</span>
+                <% } %>
+              </div>
+            </td>
+            <% } %>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal" style="border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+    <h2 class="modal-title" style="padding: 24px; background: var(--bg-2); border-bottom: 1px solid var(--border); text-align: center;">New Admission Application</h2>
+    <form method="POST" action="/admissions" enctype="multipart/form-data" style="padding: 0 24px 24px;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input class="form-control" type="text" name="name" required />
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input class="form-control" type="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input class="form-control" type="text" name="phone" />
+        </div>
+        <div class="form-group">
+          <label>Course</label>
+          <select class="form-control" name="course">
+            <optgroup label="Engineering">
+              <option>B.Tech (CSE)</option>
+              <option>B.Tech (ECE)</option>
+              <option>B.Tech (ME)</option>
+              <option>B.Tech (CE)</option>
+              <option>B.Tech (EEE)</option>
+              <option>B.Tech (IT)</option>
+              <option>B.Tech (Chemical)</option>
+            </optgroup>
+            <optgroup label="Management">
+              <option>BBA</option>
+              <option>MBA</option>
+            </optgroup>
+            <optgroup label="Computer Applications">
+              <option>BCA</option>
+              <option>MCA</option>
+            </optgroup>
+            <optgroup label="Science & Commerce">
+              <option>B.Sc</option>
+              <option>B.Com</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Upload Document</label>
+        <input class="form-control" type="file" name="document" accept=".pdf,.jpg,.png"/>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

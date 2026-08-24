@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fees – SmartCampus ERP</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<%- include('partials/navbar') %>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Fee Management</h1>
+    <% if (user && user.role === 'admin') { %>
+      <div style="display: flex; gap: 12px;">
+        <form id="bulk-upload-form" action="/fees/bulk-upload" method="POST" enctype="multipart/form-data" style="display: none;">
+          <input type="file" name="bulkFile" id="bulk-file-input" onchange="document.getElementById('bulk-upload-form').submit()" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+        </form>
+        <button class="btn btn-ghost" onclick="document.getElementById('bulk-file-input').click()">📁 Bulk Upload</button>
+        <button class="btn btn-danger-ghost" onclick="openBulkDeleteModal()" style="border: 1px solid var(--danger); color: var(--danger); background: transparent; border-radius: 8px; padding: 8px 16px; font-weight: 500; cursor: pointer;">🗑 Bulk Delete</button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Fee</button>
+      </div>
+    <% } %>
+
+  </div>
+
+
+
+  <div class="card" style="margin-top:24px;">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding: 16px 24px;">
+      <div class="filter-tabs" style="margin-bottom: 0;">
+        <div class="filter-tab active" data-filter="all">All Records</div>
+        <div class="filter-tab" data-filter="paid">Paid</div>
+        <div class="filter-tab" data-filter="unpaid">Unpaid</div>
+        <div class="filter-tab" data-filter="overdue">Overdue</div>
+      </div>
+      <div class="search-bar" style="max-width:320px; width:100%;">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="fee-search" placeholder="Search student or Fee ID..." class="form-control" style="padding-left:38px; border-radius: 999px; height: 38px;"/>
+      </div>
+    </div>
+    
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="fee-tbody">
+          <!-- Populated by fees_ui.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+ <!-- Unified Add/Edit Modal (below) -->
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal two-column-modal" style="border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 1000px; display: flex; flex-direction: column;">
+    <div class="modal-header" style="padding: 24px; background: var(--bg-2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <h2 class="modal-title" style="font-size: 22px;">Add Fee Details</h2>
+        <p style="color: var(--text-3); font-size: 14px; margin-top: 4px;">Fill in the college student fee information below</p>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('smart-fee-form').requestSubmit()" id="modal-header-save">Save</button>
+        <button class="modal-close" style="position: static;" onclick="document.getElementById('addModal').classList.remove('open')">&times;</button>
+      </div>
+    </div>
+    <form method="POST" action="/fees" id="smart-fee-form" style="display: flex; flex: 1; overflow: hidden; max-height: 75vh; min-height: 480px;">
+      <!-- LEFT: FORM (Scrollable) -->
+      <div style="flex: 2; overflow-y: auto; padding: 24px; border-right: 1px solid var(--border);">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" class="form-control" id="sf-name" name="studentName" placeholder="Enter full name" required>
+          </div>
+          <div class="form-group">
+            <label>Student ID / Roll Number</label>
+            <input type="text" class="form-control" id="sf-roll" name="studentIdStr" placeholder="e.g. 23CS001" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label>Student Email (for notifications)</label>
+          <input type="email" class="form-control" id="sf-email" name="email" placeholder="student@example.com" required>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label>Department</label>
+          <select class="form-control" id="sf-dept" name="department" required>
+            <option value="">— Select Department —</option>
+            <optgroup label="Engineering Departments">
+              <option value="CSE">Computer Science and Engineering (CSE)</option>
+              <option value="IT">Information Technology (IT)</option>
+              <option value="CSBS">Computer Science and Business Systems (CSBS)</option>
+              <option value="AIDS">Artificial Intelligence and Data Science (AIDS)</option>
+              <option value="AIML">Artificial Intelligence and Machine Learning (AIML)</option>
+              <option value="CSD">Computer Science and Design (CSD)</option>
+              <option value="CY">Cyber Security (CY)</option>
+              <option value="MECH">Mechanical Engineering (MECH)</option>
+              <option value="CIVIL">Civil Engineering (CIVIL)</option>
+              <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
+              <option value="ECE">Electronics and Communication Engineering (ECE)</option>
+              <option value="EIE">Electronics and Instrumentation Engineering (EIE)</option>
+              <option value="AUTO">Automobile Engineering (AUTO)</option>
+              <option value="AERO">Aeronautical Engineering (AERO)</option>
+              <option value="Aerospace">Aerospace Engineering</option>
+              <option value="BME">Biomedical Engineering (BME)</option>
+              <option value="BT">Biotechnology Engineering (BT)</option>
+              <option value="CHEM">Chemical Engineering (CHEM)</option>
+              <option value="FT">Food Technology (FT)</option>
+              <option value="IE">Industrial Engineering (IE)</option>
+              <option value="Manufacturing">Manufacturing Engineering</option>
+              <option value="Metallurgical">Metallurgical Engineering</option>
+              <option value="Mining">Mining Engineering</option>
+              <option value="Petroleum">Petroleum Engineering</option>
+              <option value="RA">Robotics and Automation (RA)</option>
+              <option value="Agriculture">Agriculture Engineering</option>
+              <option value="Marine">Marine Engineering</option>
+              <option value="Textile">Textile Technology</option>
+              <option value="Environmental">Environmental Engineering</option>
+            </optgroup>
+            <optgroup label="Management & Science Departments">
+              <option value="MBA">Master of Business Administration (MBA)</option>
+              <option value="MCA">Master of Computer Applications (MCA)</option>
+              <option value="BBA">Bachelor of Business Administration (BBA)</option>
+              <option value="BCA">Bachelor of Computer Applications (BCA)</option>
+              <option value="BSc CS">B.Sc Computer Science</option>
+              <option value="BSc IT">B.Sc Information Technology</option>
+              <option value="BSc Math">B.Sc Mathematics</option>
+              <option value="BSc Physics">B.Sc Physics</option>
+              <option value="BSc Chemistry">B.Sc Chemistry</option>
+              <option value="BCom Gen">B.Com General</option>
+              <option value="BCom CA">B.Com Computer Applications</option>
+              <option value="MSc CS">M.Sc Computer Science</option>
+              <option value="MCom">M.Com</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label>Program / Degree</label>
+          <select class="form-control" id="sf-program" name="program" required>
+            <option value="">— Select Program —</option>
+          </select>
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 14px;">
+          <div class="form-group">
+            <label>Academic Year</label>
+            <select class="form-control" id="sf-year" name="year" required>
+              <option value="">— Year —</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Semester</label>
+            <select class="form-control" id="sf-sem" name="semester" required>
+              <option value="">— Semester —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Academic Session</label>
+            <select class="form-control" id="sf-session" name="session" required>
+              <option value="2022-23">2022-23</option>
+              <option value="2023-24">2023-24</option>
+              <option value="2024-25" selected>2024-25</option>
+              <option value="2025-26">2025-26</option>
+              <option value="2026-27">2026-27</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+          <div class="form-group">
+            <label>Fee Type</label>
+            <select class="form-control" id="sf-type" name="feeType" required>
+              <option value="Tuition Fee">Tuition Fee</option>
+              <option value="Exam Fee">Exam Fee</option>
+              <option value="Transport Fee">Transport Fee</option>
+              <option value="Library Fee">Library Fee</option>
+              <option value="Sports Fee">Sports Fee</option>
+              <option value="Hostel Fee">Hostel Fee</option>
+              <option value="Lab Fee">Lab Fee</option>
+              <option value="Placement Fee">Placement Fee</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fee ID</label>
+            <input type="text" class="form-control mono" id="sf-feeid" name="feeId" readonly style="background: var(--bg); color: var(--text-2);">
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 14px;">
+          <div class="form-group">
+            <label>Total Fee Amount (₹)</label>
+            <input type="number" class="form-control" id="sf-total" name="amount" min="1" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label>Scholarship/Discount</label>
+            <input type="number" class="form-control" id="sf-discount" name="discount" value="0.00" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Net Payable</label>
+            <input type="number" class="form-control" id="sf-net" readonly style="background: #eff6ff; color: #2563eb; font-weight: 700; border-color: #bfdbfe;">
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1.5fr 1.5fr; margin-top: 14px;">
+          <div class="form-group">
+            <label>Amount Paid (₹)</label>
+            <input type="number" class="form-control" id="sf-paid" name="amountPaid" value="0.00" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <select class="form-control" id="sf-method" name="paymentMethod">
+              <option>Cash</option>
+              <option>UPI</option>
+              <option>NEFT/RTGS</option>
+              <option>Bank Transfer</option>
+              <option>Card</option>
+              <option>DD / Cheque</option>
+              <option>College Portal</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Transaction / DD No.</label>
+            <input type="text" class="form-control" id="sf-txn" name="transactionId" placeholder="Optional">
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" class="form-control" id="sf-due" name="dueDate" required>
+          </div>
+          <div class="form-group">
+            <label>Payment Date</label>
+            <input type="date" class="form-control" id="sf-paydate" name="paidDate">
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 2fr; margin-top: 14px;">
+          <div class="form-group">
+            <label>Status</label>
+            <div>
+              <span id="sf-status" class="badge badge-default" style="margin-top: 4px; padding: 6px 12px; font-size: 13px;">—</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Remarks</label>
+            <textarea class="form-control" id="sf-remarks" name="remarks" rows="2" placeholder="Any additional notes..."></textarea>
+          </div>
+        </div>
+        <input type="hidden" name="studentId" value="1">
+        <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Save Fee Record</button>
+        </div>
+      </div>
+      <!-- RIGHT: LIVE SUMMARY PANEL -->
+      <div style="flex: 1; padding: 32px 24px; background: #fafafa; display: flex; flex-direction: column;">
+        <h3 style="font-size: 16px; margin-bottom: 24px; color: var(--text);">Live Fee Summary</h3>
+        <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+            <div id="sum-avatar" style="width: 44px; height: 44px; border-radius: 50%; background: var(--bg-2); color: var(--text-3); font-weight: bold; display: grid; place-items: center; font-size: 16px;">?</div>
+            <div>
+              <div id="sum-name" style="font-weight: 700; color: var(--text); font-size: 15px;">Student Name</div>
+              <div id="sum-roll" class="mono" style="color: var(--text-3); font-size: 12px; margin-top: 2px;">ID: —</div>
+            </div>
+          </div>
+          <div id="sum-dept" style="font-size: 13px; color: var(--text-2); font-weight: 500; margin-bottom: 4px;">Department — Program</div>
+          <div id="sum-sem" style="display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 8px; background: #eff6ff; color: #2563eb; border-radius: 6px;">Year — Semester</div>
+        </div>
+        <div style="flex: 1;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px;">
+            <span style="color: var(--text-2);">Total Fee</span>
+            <strong id="sum-total" style="font-family: 'Space Grotesk', sans-serif;">₹0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px;">
+            <span style="color: var(--text-2);">Scholarship</span>
+            <strong id="sum-disc" style="font-family: 'Space Grotesk', sans-serif; color: var(--success);">-₹0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 14px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
+            <span style="font-weight: 600;">Net Payable</span>
+            <strong id="sum-net" style="font-family: 'Space Grotesk', sans-serif; color: #2563eb; font-size: 16px;">₹0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 13px;">
+            <span style="color: var(--text-2);">Amount Paid</span>
+            <strong id="sum-paid" style="font-family: 'Space Grotesk', sans-serif;">₹0</strong>
+          </div>
+          <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 600; font-size: 14px;">Balance Due</span>
+              <strong id="sum-bal" style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #d97706;">₹0</strong>
+            </div>
+            <div class="progress-container" style="height: 8px; background: #e5e7eb;">
+              <div id="sum-prog-fill" class="progress-fill amber" style="width: 0%;"></div>
+            </div>
+            <div id="sum-prog-lbl" style="text-align: right; font-size: 11px; color: var(--text-3); margin-top: 6px; font-weight: 600;">0% Paid</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-ghost" style="flex: 1;" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
+          <button type="button" id="btn-delete-fee" class="btn btn-ghost" style="flex: 1; display: none; color: var(--danger); border: 1px solid var(--danger);">Delete</button>
+          <button type="submit" class="btn btn-primary" style="flex: 2;">Save Fee Record</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Fee Details</h2>
+      <button class="modal-close" onclick="document.getElementById('viewModal').classList.remove('open')">&times;</button>
+    </div>
+    <div class="modal-body" id="view-modal-body">
+      <!-- Populated by fees_ui.js -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('viewModal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Bulk Delete Modal -->
+<div class="modal-overlay" id="bulkDeleteFeesModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Bulk Delete Fees</h2>
+      <button class="modal-close" onclick="document.getElementById('bulkDeleteFeesModal').classList.remove('open')">&times;</button>
+    </div>
+    <form method="POST" action="/fees/bulk-delete" onsubmit="return confirm('Are you sure you want to permanently delete all selected records?');">
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <p style="margin-bottom: 15px; color: var(--text-2);">Select the fee records you wish to permanently delete.</p>
+        <div id="bulk-delete-fees-list" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Populated by fees_ui.js -->
+        </div>
+      </div>
+      <div class="modal-footer" style="padding-top: 20px; text-align: right;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('bulkDeleteFeesModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-danger" style="background: var(--danger); color: white;">Delete Selected</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="fee-data-store" 
+     style="display: none;" 
+     data-is-admin="<%= (user && user.role === 'admin') %>" 
+     data-fees='<%- JSON.stringify(fees.map(f => ({
+       id: f.id,
+       studentId: f.student ? f.student.id : null,
+       studentName: f.student ? f.student.name : "Unknown",
+       studentRoll: f.student ? f.student.student_id : "",
+       email: f.student ? f.student.email : "",
+       dept: f.student ? f.student.course : "",
+       year: f.student ? f.student.year : "1",
+       type: f.feeType,
+       amount: f.amount,
+       paid: f.amountPaid || 0,
+       due: f.dueDate || "",
+       status: f.status,
+       receiptNo: f.receiptNo,
+       remarks: f.remarks || "",
+       method: f.paymentMethod || "Cash",
+       paidDate: f.paidDate || ""
+     }))) %>'>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script>
+  (function() {
+    const store = document.getElementById('fee-data-store');
+    if (store) {
+      window.isAdmin = store.dataset.isAdmin === 'true';
+      window.FEE_RECORDS = JSON.parse(store.dataset.fees);
+    }
+  })();
+</script>
+<script src="/js/fees_ui.js"></script>
+</body>
+</html>

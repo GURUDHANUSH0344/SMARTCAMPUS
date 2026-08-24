@@ -1,0 +1,139 @@
+<%
+  const dashboardLink = (user && user.role === 'student') ? '/student/dashboard' : '/';
+  const quickLink = user && user.role === 'admin'
+    ? '/admissions'
+    : user && user.role === 'teacher'
+      ? '/exams'
+      : null;
+  const quickTitle = user && user.role === 'admin'
+    ? 'New Admission'
+    : user && user.role === 'teacher'
+      ? 'Add Result'
+      : null;
+  const initials = user && user.name
+    ? user.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()
+    : 'SC';
+%>
+<header class="main-header">
+  <div class="header-container">
+    <!-- Left Section: Brand -->
+    <div class="header-section header-left">
+      <a href="<%= dashboardLink %>" class="brand-link">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5 12 5l9 4.5-9 4.5-9-4.5Z"></path>
+            <path d="M7 11.5v4.2c0 .4.2.8.6 1 1.2.8 2.8 1.3 4.4 1.3s3.2-.5 4.4-1.3c.4-.2.6-.6.6-1v-4.2"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">SmartCampus</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Center Section: Navigation -->
+    <nav class="header-section header-center">
+      <div class="nav-links-horizontal">
+        <a href="<%= dashboardLink %>" class="nav-link-h">
+          <span class="nav-icon-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            </svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="/admissions" class="nav-link-h">
+          <span class="nav-icon-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 19v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M20 8v6"></path>
+              <path d="M23 11h-6"></path>
+            </svg>
+          </span>
+          <span>Admissions</span>
+        </a>
+
+        <% if (user && user.role === 'admin') { %>
+        <a href="/admissions/students" class="nav-link-h">
+          <span class="nav-icon-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </span>
+          <span>Students</span>
+        </a>
+        <% } %>
+
+        <a href="/fees" class="nav-link-h">
+          <span class="nav-icon-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect>
+              <path d="M2.5 10.5h19"></path>
+            </svg>
+          </span>
+          <span>Fees</span>
+        </a>
+
+        <a href="/hostel" class="nav-link-h">
+          <span class="nav-icon-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 21V5.5A1.5 1.5 0 0 1 5.5 4H13v17"></path>
+              <path d="M13 8h5.5A1.5 1.5 0 0 1 20 9.5V21"></path>
+              <path d="M2 21h20"></path>
+            </svg>
+          </span>
+          <span>Hostel</span>
+        </a>
+
+        <a href="/exams" class="nav-link-h">
+          <span class="nav-icon-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5 12 6l9 4.5-9 4.5-9-4.5Z"></path>
+              <path d="M7 12.5v3.2c0 .4.2.7.5.9 1.2.8 2.8 1.4 4.5 1.4s3.3-.6 4.5-1.4c.3-.2.5-.5.5-.9v-3.2"></path>
+            </svg>
+          </span>
+          <span>Exams</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Right Section: User Actions -->
+    <div class="header-section header-right">
+      <% if (user) { %>
+        <div class="user-actions">
+          <% if (quickLink && quickTitle) { %>
+          <a href="<%= quickLink %>" class="quick-add-btn" title="<%= quickTitle %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span class="btn-text"><%= quickTitle %></span>
+          </a>
+          <% } %>
+
+          <div class="user-profile-dropdown">
+            <div class="user-avatar-small"><%= initials %></div>
+            <div class="user-info-mini">
+              <span class="user-name-small"><%= user.name %></span>
+            </div>
+            <a href="/auth/logout" class="logout-link" title="Logout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </a>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= (user && user.role === 'student') ? 'My Exam Results' : 'Exams' %> – SmartCampus ERP</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<%- include('partials/navbar') %>
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title"><%= (user && user.role === 'student') ? 'My Exam Results' : 'Exam Results' %></h1>
+    <% if (user && user.role === 'admin') { %>
+    <div style="display: flex; gap: 12px;">
+      <form id="bulk-upload-form" action="/exams/bulk-upload" method="POST" enctype="multipart/form-data" style="display: none;">
+        <input type="file" name="bulkFile" id="bulk-file-input" onchange="this.form.submit()" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+      </form>
+      <button class="btn btn-ghost" onclick="document.getElementById('bulk-file-input').click()">📁 Bulk Upload</button>
+      <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">+ New Application</button>
+    </div>
+    <% } %>
+
+  </div>
+
+  <div class="card">
+    <div class="card-header"><%= (user && user.role === 'student') ? 'Your Exam Records' : 'All Exam Records' %> (<%= exams.length %>)</div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+          <% if (exams.length === 0) { %>
+            <div style="text-align:center;color:var(--muted);padding:40px; background:white; border-radius:12px; border:1px solid #e8edf5;">No exam records yet.</div>
+          <% } else { %>
+            
+            <% if (user && user.role === 'admin') { %>
+              <% 
+                // Group by Student
+                const studentGroups = {};
+                exams.forEach(e => {
+                  const sId = e.student ? e.student.student_id : 'Unknown ID';
+                  const sName = e.student ? e.student.name : 'Unknown Student';
+                  const key = sName + ' (' + sId + ')';
+                  if (!studentGroups[key]) studentGroups[key] = [];
+                  studentGroups[key].push(e);
+                });
+              %>
+
+              <% Object.keys(studentGroups).sort().forEach((studentName, sIndex) => { %>
+                <details class="sem-card-folder" <%= sIndex === 0 ? 'open' : '' %> style="background: white; border: 1px solid #e8edf5; border-radius: 12px; margin-bottom: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                  <summary style="padding: 16px 20px; background: #e2e8f0; font-weight: 700; color: #1e293b; display: flex; align-items: center; cursor: pointer; list-style: none;">
+                     <span style="font-size:18px; margin-right:8px;">📁</span> Student: <%= studentName %>
+                  </summary>
+                  <div style="padding: 16px; background:#f8fafc;">
+                    
+                    <% 
+                      // Group by Semester for this specific student
+                      const studentExams = studentGroups[studentName];
+                      const semGroups = {};
+                      studentExams.forEach(e => {
+                        const sem = e.semester || 1;
+                        if (!semGroups[sem]) semGroups[sem] = [];
+                        semGroups[sem].push(e);
+                      });
+                    %>
+
+                    <% Object.keys(semGroups).sort().forEach((sem, index) => { %>
+                      <details class="sem-card-folder" <%= index === 0 ? 'open' : '' %> style="background: white; border: 1px solid #e8edf5; border-radius: 8px; margin-bottom: 8px; overflow: hidden;">
+                        <summary style="padding: 12px 16px; background: white; font-weight: 600; color: #334155; display: flex; align-items: center; cursor: pointer; list-style: none; border-bottom: 1px solid #e8edf5;">
+                           <span style="font-size:16px; margin-right:8px;">📂</span> Semester <%= sem %> Results
+                        </summary>
+                        <div style="overflow-x:auto;">
+                          <table class="dash-table" style="width:100%; border-collapse:collapse; text-align:left;">
+                            <thead>
+                              <tr style="background:#f1f5f9; font-size:12px; text-transform:uppercase; color:#64748b;">
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Subject</th>
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Type</th>
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Marks</th>
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Credits</th>
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Grade</th>
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Date</th>
+                                <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <% semGroups[sem].forEach((e) => { %>
+                                <tr style="border-bottom:1px solid #e8edf5; font-size:13.5px; background:white;">
+                                  <td style="padding:12px 16px;"><%= e.subject %></td>
+                                  <td style="padding:12px 16px;"><span class="badge badge-default"><%= e.examType %></span></td>
+                                  <td style="padding:12px 16px;"><%= e.marksObtained %>/<%= e.maxMarks %></td>
+                                  <td style="padding:12px 16px;"><%= e.credits || 3.0 %></td>
+                                  <td style="padding:12px 16px;"><span class="badge badge-<%= e.grade === 'F' ? 'f' : (e.grade === 'O' ? 'o' : 'default') %>"><%= e.grade %></span></td>
+                                  <td style="padding:12px 16px; color:#64748b;"><%= e.examDate || '—' %></td>
+                                  <td style="padding:12px 16px;">
+                                    <form method="POST" action="/exams/delete/<%= e.id %>" style="margin:0;">
+                                      <button class="btn btn-sm btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>
+                                    </form>
+                                  </td>
+                                </tr>
+                              <% }) %>
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
+                    <% }) %>
+
+                  </div>
+                </details>
+              <% }) %>
+
+            <% } else { %>
+              
+              <% 
+                // Group by Semester for Student Login
+                const semGroups = {};
+                exams.forEach(e => {
+                  const sem = e.semester || 1;
+                  if (!semGroups[sem]) semGroups[sem] = [];
+                  semGroups[sem].push(e);
+                });
+              %>
+
+              <% Object.keys(semGroups).sort().forEach((sem, index) => { %>
+                <details class="sem-card-folder" <%= index === 0 ? 'open' : '' %> style="background: white; border: 1px solid #e8edf5; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                  <summary style="padding: 16px 20px; background: #f8fafc; font-weight: 700; color: #1e293b; display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; border-bottom: 1px solid #e8edf5;">
+                     <div style="display:flex; align-items:center; gap:8px;">
+                       <span style="font-size:18px;">📁</span> Semester <%= sem %> Results
+                     </div>
+                  </summary>
+                  <div style="overflow-x:auto;">
+                    <table class="dash-table" style="width:100%; border-collapse:collapse; text-align:left;">
+                      <thead>
+                        <tr style="background:#f1f5f9; font-size:12px; text-transform:uppercase; color:#64748b;">
+                          <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Subject</th>
+                          <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Type</th>
+                          <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Marks</th>
+                          <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Credits</th>
+                          <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Grade</th>
+                          <th style="padding:10px 16px; border-bottom:1px solid #e8edf5;">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% semGroups[sem].forEach((e) => { %>
+                          <tr style="border-bottom:1px solid #e8edf5; font-size:13.5px; background:white;">
+                            <td style="padding:12px 16px;"><%= e.subject %></td>
+                            <td style="padding:12px 16px;"><span class="badge badge-default"><%= e.examType %></span></td>
+                            <td style="padding:12px 16px;"><%= e.marksObtained %>/<%= e.maxMarks %></td>
+                            <td style="padding:12px 16px;"><%= e.credits || 3.0 %></td>
+                            <td style="padding:12px 16px;"><span class="badge badge-<%= e.grade === 'F' ? 'f' : (e.grade === 'O' ? 'o' : 'default') %>"><%= e.grade %></span></td>
+                            <td style="padding:12px 16px; color:#64748b;"><%= e.examDate || '—' %></td>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              <% }) %>
+
+            <% } %>
+          <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal" style="border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+    <h2 class="modal-title" style="padding: 24px; background: var(--bg-2); border-bottom: 1px solid var(--border); text-align: center;">New Application (Exam Result)</h2>
+    <form method="POST" action="/exams" style="padding: 0 24px 24px;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Student *</label>
+          <select class="form-control" name="studentId" required>
+            <option value="">— Select Student —</option>
+            <% students.forEach(s => { %>
+              <option value="<%= s.id %>"><%= s.name %> (<%= s.student_id %>)</option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Semester *</label>
+          <select class="form-control" name="semester" required>
+            <% for(let i=1; i<=8; i++) { %>
+              <option value="<%= i %>">Semester <%= i %></option>
+            <% } %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Subject *</label>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <select class="form-control" name="subjectId" id="subjectSelect" onchange="toggleNewSubject(this.value)">
+              <option value="">— Select Existing Subject —</option>
+              <% subjects.forEach(sub => { %>
+                <option value="<%= sub.id %>"><%= sub.name %></option>
+              <% }) %>
+              <option value="new">+ Add New Subject</option>
+            </select>
+            <input class="form-control" type="text" name="newSubject" id="newSubjectInput" placeholder="Enter new subject name" style="display: none;" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Exam Type</label>
+          <select class="form-control" name="examType">
+            <option>Internal</option><option>External</option><option>Practical</option><option>Viva</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Marks</label>
+          <input class="form-control" type="number" name="maxMarks" value="100" min="1"/>
+        </div>
+        <div class="form-group">
+          <label>Marks Obtained *</label>
+          <input class="form-control" type="number" name="marksObtained" step="0.5" min="0" required/>
+        </div>
+        <div class="form-group">
+          <label>Credits</label>
+          <input class="form-control" type="number" name="credits" value="3.0" step="0.5" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Exam Date</label>
+          <input class="form-control" type="date" name="examDate"/>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Remarks</label>
+        <input class="form-control" type="text" name="remarks" placeholder="Optional" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Result</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="/js/main.js"></script>
+<script>
+    function toggleNewSubject(val) {
+      const input = document.getElementById('newSubjectInput');
+      if (val === 'new') {
+        input.style.display = 'block';
+        input.required = true;
+      } else {
+        input.style.display = 'none';
+        input.required = false;
+        input.value = '';
+      }
+    }
+  </script>
+</body>
+</html>

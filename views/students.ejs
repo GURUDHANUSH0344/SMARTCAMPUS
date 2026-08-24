@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Management – SmartCampus ERP</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<%- include('partials/navbar') %>
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Student Management</h1>
+    <div style="display: flex; gap: 12px;">
+      <form id="bulk-upload-form" action="/admissions/students/bulk-upload" method="POST" enctype="multipart/form-data" style="display: none;">
+        <input type="file" name="bulkFile" id="bulk-file-input" onchange="this.form.submit()" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+      </form>
+      <button class="btn btn-ghost" onclick="document.getElementById('bulk-file-input').click()">📁 Bulk Upload</button>
+      <button class="btn btn-danger-ghost" onclick="document.getElementById('bulkDeleteStudentsModal').classList.add('open')" style="border: 1px solid var(--danger); color: var(--danger); background: transparent; border-radius: 8px; padding: 8px 16px; font-weight: 500; cursor: pointer;">🗑 Bulk Delete</button>
+      <button class="btn btn-primary" onclick="document.getElementById('addStudentModal').classList.add('open')">+ Add Student</button>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="card-header">All Admitted Students (<%= students.length %>)</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Course</th>
+            <th>Year</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (students.length === 0) { %>
+            <tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:30px;">No students found.</td></tr>
+          <% } %>
+          <% students.forEach((s) => { %>
+          <tr>
+            <td><code class="mono"><%= s.student_id %></code></td>
+            <td><strong><%= s.name %></strong></td>
+            <td><%= s.email %></td>
+            <td><%= s.course %></td>
+            <td>Year <%= s.year %></td>
+            <td>
+              <div class="actions">
+                <a href="/admissions/students/<%= s.id %>/dashboard" class="btn btn-sm btn-ghost">📊 Dashboard</a>
+                <form method="POST" action="/admissions/students/delete/<%= s.id %>" onsubmit="return confirm('Are you sure you want to delete this student record?');">
+                  <button class="btn btn-sm btn-danger">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="addStudentModal">
+  <div class="modal">
+    <div class="card-header">
+      <span>Add New Student Manually</span>
+    </div>
+    <form method="POST" action="/admissions/students" style="padding: 24px;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input class="form-control" type="text" name="name" required />
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input class="form-control" type="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input class="form-control" type="text" name="phone" />
+        </div>
+        <div class="form-group">
+          <label>Course</label>
+          <select class="form-control" name="course">
+            <option>B.Tech (CSE)</option>
+            <option>B.Tech (ECE)</option>
+            <option>B.Tech (ME)</option>
+            <option>BBA</option>
+            <option>MBA</option>
+            <option>BCA</option>
+            <option>MCA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <select class="form-control" name="year">
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding-top: 20px; text-align: right;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('addStudentModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Bulk Delete Modal -->
+<div class="modal-overlay" id="bulkDeleteStudentsModal">
+  <div class="modal">
+    <div class="modal-header" style="display:flex; justify-content:space-between; padding: 20px 24px; border-bottom: 1px solid var(--border);">
+      <h2 class="modal-title" style="font-size:18px;">Bulk Delete Students</h2>
+      <button type="button" class="modal-close" style="background:transparent; border:none; font-size:24px; cursor:pointer;" onclick="document.getElementById('bulkDeleteStudentsModal').classList.remove('open')">&times;</button>
+    </div>
+    <form method="POST" action="/admissions/students/bulk-delete" onsubmit="return confirm('Are you sure you want to permanently delete all selected students?\\nThis will also delete their associated fees, exams, and hostel records.');">
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto; padding: 24px;">
+        <p style="margin-bottom: 15px; color: var(--text-2);">Select the student records you wish to permanently delete.</p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <% if (students.length === 0) { %>
+            <p style="color:var(--text-3); text-align:center; padding: 20px;">No students available.</p>
+          <% } %>
+          <% students.forEach((s) => { %>
+            <label style="display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--border); border-radius:8px; cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
+              <input type="checkbox" name="studentIds[]" value="<%= s.id %>" style="width:16px; height:16px;" />
+              <div>
+                <strong style="display:block; color:var(--text);"><%= s.name %> <span style="font-weight:normal; color:var(--text-3);">(<%= s.student_id %>)</span></strong>
+                <span style="font-size:12.5px; color:var(--text-2); display:block; margin-top:2px;"><%= s.course %> - Year <%= s.year %></span>
+              </div>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 20px 24px; border-top: 1px solid var(--border); text-align: right;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('bulkDeleteStudentsModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-danger" style="background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer;">Delete Selected</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

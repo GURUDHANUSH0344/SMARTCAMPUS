@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Error – SmartCampus ERP</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<% if (locals.user) { %><%- include('partials/navbar') %><% } %>
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;max-width:420px;padding:40px;">
+    <div style="font-size:64px;margin-bottom:16px;">⚠️</div>
+    <h1 style="font-size:24px;font-weight:700;margin-bottom:12px;">Something went wrong</h1>
+    <p style="color:var(--muted);margin-bottom:28px;"><%= locals.message || 'An unexpected error occurred.' %></p>
+    <a href="/" class="btn btn-primary">Go to Dashboard</a>
+  </div>
+</div>
+</body>
+</html>

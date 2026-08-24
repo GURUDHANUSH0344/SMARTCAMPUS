@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hostel – SmartCampus ERP</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<%- include('partials/navbar') %>
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Hostel Management</h1>
+    <button class="btn btn-primary" onclick="openHostelModal()">+ Add Accommodation</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">All Hostel Allocations (<%= allocations.length %>)</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Student</th><th>Room No</th><th>Block</th><th>Bed</th>
+            <th>Check-In</th><th>Check-Out</th><th>Rent/Month</th><th>Status</th>
+            <% if (user && user.role === 'admin') { %><th>Actions</th><% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (allocations.length === 0) { %>
+            <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px;">No hostel allocations yet.</td></tr>
+          <% } %>
+          <% allocations.forEach((h, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td>
+              <strong><%= h.student ? h.student.name : '—' %></strong><br/>
+              <small style="color:var(--muted)"><%= h.student ? h.student.student_id : '' %></small>
+            </td>
+            <td><strong><%= h.roomNo %></strong></td>
+            <td><%= h.block || '—' %></td>
+            <td><%= h.bedNo || '—' %></td>
+            <td><%= h.checkInDate || '—' %></td>
+            <td><%= h.checkOutDate || '—' %></td>
+            <td>₹<%= (h.monthlyRent || 0).toLocaleString() %></td>
+            <td><span class="badge badge-<%= h.status.toLowerCase() %>"><%= h.status %></span></td>
+            <td>
+              <div class="actions">
+                <% 
+                  const isAdmin = user && user.role === 'admin';
+                  const isOwnRecord = user && user.role === 'student' && h.student && h.student.email === user.email;
+                %>
+                
+                <% if (h.status === 'Active' && (isAdmin || isOwnRecord)) { %>
+                  <form method="POST" action="/hostel/vacate/<%= h.id %>" onsubmit="return confirm('Confirm Check Out?')">
+                    <button class="btn btn-sm btn-info">Check Out</button>
+                  </form>
+                <% } %>
+                
+                <% if (isAdmin) { %>
+                  <form method="POST" action="/hostel/delete/<%= h.id %>"
+                    onsubmit="return confirm('Delete this record?')">
+                    <button class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Premium Accommodation Modal -->
+<div class="modal-overlay" id="hostelModal">
+    <div class="modal two-column-modal" style="max-width: 1000px; width: 95%; height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 24px;">
+        <!-- Modal Header -->
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: white; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="background: var(--primary-light); color: var(--primary); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text);">Add Accommodation</h2>
+                    <p style="margin: 0; font-size: 0.875rem; color: var(--muted);">Register or request hostel allocation</p>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="document.getElementById('hostel-form').submit()">Save Allocation</button>
+        </div>
+
+        <!-- Modal Content Container (Scrollable) -->
+        <div id="hostel-form-container" style="display: flex; flex: 1; overflow: hidden; background: #f8fafc;">
+            <!-- Left Column: Form -->
+            <div class="modal-form-column" style="flex: 1.5; padding: 32px; overflow-y: auto; background: white; border-right: 1px solid var(--border);">
+                <form id="hostel-form" method="POST" action="/hostel/allocate">
+                    <div class="form-section" style="margin-bottom: 32px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; color: var(--primary); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 24px; height: 24px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
+                            Occupant Details
+                        </h3>
+                        <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Student *</label>
+                                <% if (user && user.role === 'student') { 
+                                    const currentStudent = students.find(s => s.email === user.email);
+                                %>
+                                    <input type="hidden" name="studentId" value="<%= currentStudent ? currentStudent.id : '' %>" />
+                                    <input type="text" class="form-control" value="<%= currentStudent ? currentStudent.name : 'Your Name' %>" readonly style="background: #f1f5f9; cursor: not-allowed;" />
+                                <% } else { %>
+                                    <select class="form-control" name="studentId" id="studentSelect" required onchange="updateHostelSummary()">
+                                        <option value="">Select Student</option>
+                                        <% students.forEach(s => { %>
+                                            <option value="<%= s.id %>" data-sid="<%= s.student_id %>" data-course="<%= s.course %>"><%= s.name %> (<%= s.student_id %>)</option>
+                                        <% }) %>
+                                    </select>
+                                <% } %>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Monthly Rent (₹)</label>
+                                <input type="number" class="form-control" name="monthlyRent" id="monthlyRent" placeholder="e.g. 5000" min="0" oninput="updateHostelSummary()" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section" style="margin-bottom: 32px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; color: var(--primary); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 24px; height: 24px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">2</span>
+                            Room Allocation
+                        </h3>
+                        <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Block *</label>
+                                <select class="form-control" name="block" id="block" required onchange="updateHostelSummary()">
+                                    <option value="">Select Block</option>
+                                    <option value="Block A (Boys)">Block A (Boys)</option>
+                                    <option value="Block B (Girls)">Block B (Girls)</option>
+                                    <option value="Block C (Premium)">Block C (Premium)</option>
+                                    <option value="Block D (PG/Staff)">Block D (PG/Staff)</option>
+                                    <option value="Annex Block">Annex Block</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Room No *</label>
+                                <select class="form-control" name="roomNo" id="roomNo" required onchange="updateHostelSummary()">
+                                    <option value="">Select Room</option>
+                                    <optgroup label="Ground Floor">
+                                        <option value="101">Room 101</option>
+                                        <option value="102">Room 102</option>
+                                        <option value="103">Room 103</option>
+                                        <option value="104">Room 104</option>
+                                        <option value="105">Room 105</option>
+                                    </optgroup>
+                                    <optgroup label="First Floor">
+                                        <option value="201">Room 201</option>
+                                        <option value="202">Room 202</option>
+                                        <option value="203">Room 203</option>
+                                        <option value="204">Room 204</option>
+                                        <option value="205">Room 205</option>
+                                    </optgroup>
+                                    <optgroup label="Second Floor">
+                                        <option value="301">Room 301</option>
+                                        <option value="302">Room 302</option>
+                                        <option value="303">Room 303</option>
+                                        <option value="304">Room 304</option>
+                                        <option value="305">Room 305</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Bed No</label>
+                                <select class="form-control" name="bedNo" id="bedNo" onchange="updateHostelSummary()">
+                                    <option value="">Select Bed</option>
+                                    <option value="B1">Bed B1</option>
+                                    <option value="B2">Bed B2</option>
+                                    <option value="B3">Bed B3</option>
+                                    <option value="B4">Bed B4</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Check-In Date</label>
+                                <input type="date" class="form-control" name="checkInDate" id="checkInDate" oninput="updateHostelSummary()" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label style="display: block; font-weight: 500; margin-bottom: 8px; color: var(--text-dark);">Remarks</label>
+                        <textarea class="form-control" name="remarks" placeholder="Any additional notes..." style="height: 100px; resize: none;"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Live Summary -->
+            <div class="modal-summary-column" style="flex: 0.8; padding: 32px; background: #f8fafc; border-top-right-radius: 24px; border-bottom-right-radius: 24px; display: flex; flex-direction: column;">
+                <div style="background: white; border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex: 1; display: flex; flex-direction: column;">
+                    <h4 style="margin: 0 0 20px; font-size: 1rem; color: var(--text); border-bottom: 1px dashed var(--border); padding-bottom: 12px;">Live Summary</h4>
+                    
+                    <div id="hostel-summary-content" style="flex: 1;">
+                        <div style="margin-bottom: 24px; text-align: center; background: var(--bg-2); padding: 16px; border-radius: 12px;">
+                            <div id="summary-room-display" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">—</div>
+                            <div id="summary-block-display" style="font-size: 0.875rem; color: var(--muted); margin-top: 4px;">Select Room & Block</div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--muted); font-size: 0.875rem;">Student:</span>
+                                <span id="summary-student-name" style="font-weight: 600; font-size: 0.875rem; color: var(--text-dark);">—</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--muted); font-size: 0.875rem;">Student ID:</span>
+                                <span id="summary-student-id" style="font-weight: 600; font-size: 0.875rem; color: var(--text-dark);">—</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--muted); font-size: 0.875rem;">Monthly Rent:</span>
+                                <span id="summary-rent" style="font-weight: 700; font-size: 1rem; color: var(--text-dark);">Rs. 0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--muted); font-size: 0.875rem;">Bed No:</span>
+                                <span id="summary-bed" style="font-weight: 600; font-size: 0.875rem; color: var(--text-dark);">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); text-align: center;">
+                        <button type="button" class="btn btn-ghost" onclick="document.getElementById('hostelModal').classList.remove('open')" style="width: 100%;">Close Window</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Embed student data for JS summary logic
+    const currentUserRole = '<%= user ? user.role : "" %>';
+    const currentStudentName = '<%= user && user.role === "student" ? students.find(s => s.email === user.email)?.name : "" %>';
+    const currentStudentId = '<%= user && user.role === "student" ? students.find(s => s.email === user.email)?.student_id : "" %>';
+</script>
+<script src="/js/hostel_ui.js"></script>
+<script src="/js/main.js"></script>
+
+</body>
+</html>
